@@ -1,0 +1,439 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- page:start -->
+<title>Tessera One Card</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: the card is the hero object on the right; everything else is a quiet
+   single column of working panels (controls, calculator, launch path) beside or below it. */
+:root {
+  --bg: #E7ECEE;
+  --surface: #F5F8F9;
+  --ink: #0D1E29;
+  --muted: #50636E;
+  --line: #C6D0D5;
+  --accent: #0C6A68;
+  --accent-ink: #FFFFFF;
+  --metal: #A9562B;
+  --warn: #A23A1E;
+  --display: "Bricolage Grotesque", "Arial Narrow", Arial, sans-serif;
+  --body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A151B; --surface: #11212A; --ink: #E5EDF0; --muted: #91A5AF; --line: #25393F;
+    --accent: #4CC0B6; --accent-ink: #06201F; --metal: #DB9C6E; --warn: #F08A66;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0A151B; --surface: #11212A; --ink: #E5EDF0; --muted: #91A5AF; --line: #25393F;
+  --accent: #4CC0B6; --accent-ink: #06201F; --metal: #DB9C6E; --warn: #F08A66;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.55 var(--body);
+}
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+  display: flex; flex-direction: column; gap: 72px;
+}
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.5rem, 7vw, 4.75rem); line-height: .95; font-weight: 800; letter-spacing: -.02em; }
+h2 { font-size: clamp(1.6rem, 3.6vw, 2.4rem); line-height: 1.05; font-weight: 600; letter-spacing: -.01em; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; max-width: 62ch; }
+.label { font: 600 .72rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* top bar */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.mark { font: 800 1.1rem/1 var(--display); letter-spacing: .28em; }
+.tag { border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font: 600 .7rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.hero-copy { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.hero-copy p { font-size: 1.1rem; }
+.specs { display: grid; grid-template-columns: repeat(3, auto); gap: 8px 28px; justify-content: start; margin: 0; }
+.specs div { display: flex; flex-direction: column; gap: 6px; }
+.specs dt { font: 600 .68rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.specs dd { margin: 0; font: 600 1.5rem/1 var(--display); }
+
+/* the card */
+.stage { perspective: 1400px; display: flex; flex-direction: column; align-items: center; gap: 20px; min-width: 0; }
+.card {
+  --c1: #0B4E55; --c2: #06272F; --c3: #17868A; --card-ink: #E9F6F4; --card-line: rgba(233,246,244,.38);
+  width: 100%; max-width: 440px; aspect-ratio: 85.6 / 53.98; position: relative;
+  transform-style: preserve-3d; transition: transform .5s cubic-bezier(.2,.7,.2,1), filter .3s;
+  transform: rotateX(var(--rx, 6deg)) rotateY(calc(var(--ry, -14deg) + var(--flip, 0deg)));
+  border: 0; padding: 0; background: none; cursor: pointer; color: var(--card-ink); text-align: left;
+  font-family: var(--mono);
+}
+.card:focus-visible { outline: 3px solid var(--accent); outline-offset: 8px; border-radius: 18px; }
+.card[data-finish="copper"] { --c1: #9A4E27; --c2: #4A1F0C; --c3: #D58A55; --card-ink: #FFF1E4; --card-line: rgba(255,241,228,.4); }
+.card[data-finish="graphite"] { --c1: #3A4248; --c2: #14191C; --c3: #6B777E; --card-ink: #EEF2F4; --card-line: rgba(238,242,244,.36); }
+.card.frozen { filter: grayscale(1) brightness(.8); }
+.face {
+  position: absolute; inset: 0; border-radius: 4.2% / 6.6%; overflow: hidden; backface-visibility: hidden;
+  background: linear-gradient(128deg, var(--c3) 0%, var(--c1) 34%, var(--c2) 100%);
+  box-shadow: 0 30px 50px -22px rgba(4, 20, 26, .6), inset 0 0 0 1px var(--card-line);
+}
+.face canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .5; }
+.face::after { /* moving sheen */
+  content: ""; position: absolute; inset: -40%; pointer-events: none;
+  background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,.2) 50%, transparent 58%);
+  transform: translateX(var(--sheen, 0%));
+}
+.front .inner { position: absolute; inset: 0; padding: 7% 7.5%; display: flex; flex-direction: column; justify-content: space-between; }
+.front .row { display: flex; justify-content: space-between; align-items: flex-start; }
+.wordmark { font: 800 clamp(.8rem, 3.4vw, 1.15rem)/1 var(--display); letter-spacing: .3em; }
+.tier { font-size: clamp(.5rem, 1.7vw, .62rem); letter-spacing: .2em; text-transform: uppercase; opacity: .8; }
+.chip {
+  width: 13%; aspect-ratio: 1.25; border-radius: 16%;
+  background: linear-gradient(135deg, #F3D9A4, #B98A3E 55%, #EBCB8C);
+  box-shadow: inset 0 0 0 1px rgba(60,40,10,.5);
+  background-image: linear-gradient(135deg, #F3D9A4, #B98A3E 55%, #EBCB8C);
+  position: relative;
+}
+.chip::before, .chip::after { content: ""; position: absolute; background: rgba(60,40,10,.45); }
+.chip::before { left: 0; right: 0; top: 50%; height: 1px; }
+.chip::after { top: 0; bottom: 0; left: 34%; width: 1px; box-shadow: 9px 0 0 rgba(60,40,10,.45); }
+.pan { font-size: clamp(.85rem, 4.2vw, 1.35rem); letter-spacing: .12em; font-weight: 600; }
+.meta { display: flex; justify-content: space-between; align-items: flex-end; font-size: clamp(.5rem, 1.9vw, .68rem); letter-spacing: .14em; text-transform: uppercase; }
+.meta span span { display: block; opacity: .7; font-size: .8em; margin-bottom: 3px; }
+.back { transform: rotateY(180deg); }
+.back .inner { position: absolute; inset: 0; padding: 9% 7.5% 6%; display: flex; flex-direction: column; justify-content: space-between; font-size: clamp(.5rem, 1.8vw, .66rem); letter-spacing: .08em; }
+.sig { display: flex; align-items: center; gap: 4%; }
+.sig i { flex: 1; height: 2.2em; border-radius: 3px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.75) 0 6px, rgba(255,255,255,.55) 6px 12px); }
+.cvv { font-size: 1.6em; font-weight: 600; letter-spacing: .2em; }
+.frost { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font: 800 clamp(1rem, 5vw, 1.6rem)/1 var(--display); letter-spacing: .4em; color: #fff; background: rgba(10,20,26,.35); }
+.card.frozen .frost { display: flex; }
+.stage-ctl { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.swatches { display: flex; gap: 8px; }
+.swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); padding: 0; cursor: pointer; }
+.swatch[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bg) inset; }
+.swatch:focus-visible, .btn:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn { font: 600 .85rem/1 var(--body); padding: 10px 16px; border-radius: 8px; border: 1px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; }
+.btn.solid { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* sections */
+section { display: flex; flex-direction: column; gap: 28px; }
+.head { display: flex; flex-direction: column; gap: 12px; }
+.pillars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ink); }
+.pillar { padding: 20px 20px 4px 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.pillar + .pillar { padding-left: 20px; border-left: 1px solid var(--line); }
+.pillar .big { font: 800 2.4rem/1 var(--display); color: var(--accent); }
+.pillar p { font-size: .95rem; color: var(--muted); }
+
+.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: 40px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.ctl { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.ctl:last-child { border-bottom: 0; padding-bottom: 0; }
+.ctl small { display: block; color: var(--muted); font-size: .85rem; }
+.switch { appearance: none; width: 46px; height: 26px; border-radius: 999px; background: var(--line); position: relative; cursor: pointer; flex: none; margin: 0; transition: background .2s; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.switch:checked { background: var(--accent); }
+.switch:checked::after { transform: translateX(20px); }
+.log { font: 400 .8rem/1.6 var(--mono); color: var(--muted); min-height: 3.2em; }
+.log b { color: var(--ink); font-weight: 600; }
+
+.slider { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline; }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.slider .rate { color: var(--metal); font: 600 .78rem/1 var(--mono); margin-left: 8px; }
+.result { display: flex; flex-direction: column; gap: 12px; }
+.line { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
+.line.total { border-top: 1px solid var(--ink); padding-top: 14px; }
+.line.total .num { font: 800 2.2rem/1 var(--display); color: var(--accent); }
+.line.total.neg .num { color: var(--warn); }
+.note { font-size: .85rem; color: var(--muted); }
+
+ol.path { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; counter-reset: s; border-top: 1px solid var(--ink); }
+ol.path li { counter-increment: s; padding: 18px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); gap: 4px 8px; }
+ol.path li::before { content: counter(s); font: 600 .9rem/1.6 var(--mono); color: var(--metal); }
+ol.path p { grid-column: 2; font-size: .95rem; color: var(--muted); }
+.callout { border-left: 3px solid var(--metal); padding: 4px 0 4px 18px; display: flex; flex-direction: column; gap: 8px; }
+footer { font-size: .85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; }
+
+@media (max-width: 860px) {
+  .wrap { gap: 56px; }
+  .hero, .split { grid-template-columns: minmax(0, 1fr); }
+  .stage { order: -1; }
+  .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pillar { padding-left: 0; }
+  .pillar + .pillar { border-left: 0; padding-left: 0; }
+  .pillar:nth-child(even) { padding-left: 16px; border-left: 1px solid var(--line); }
+  .pillar:nth-child(n+3) { border-top: 1px solid var(--line); }
+  ol.path { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 420px) { .specs { grid-template-columns: repeat(2, auto); } }
+@media (prefers-reduced-motion: reduce) { .card, .switch, .switch::after { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="mark">TESSERA</span>
+    <span class="tag">Concept card · not issued</span>
+  </header>
+
+  <div class="hero">
+    <div class="hero-copy">
+      <span class="label">Tessera One · 17 g anodised titanium</span>
+      <h1>No preset limit. No blind spots.</h1>
+      <p>A design for the strongest card a person could carry: the highest earn rates on the market, spending power that follows your cash flow, and controls that let you lock down any part of it in a second.</p>
+      <dl class="specs">
+        <div><dt>Top earn rate</dt><dd>5×</dd></div>
+        <div><dt>Point value</dt><dd>1.5¢</dd></div>
+        <div><dt>Annual fee</dt><dd>$695</dd></div>
+      </dl>
+    </div>
+
+    <div class="stage" id="stage">
+      <button class="card" id="card" data-finish="petrol" aria-label="Tessera One card. Press to flip.">
+        <span class="face front">
+          <canvas id="guilloche" width="856" height="540" aria-hidden="true"></canvas>
+          <span class="inner">
+            <span class="row"><span class="wordmark">TESSERA</span><span class="tier">One</span></span>
+            <span class="chip" aria-hidden="true"></span>
+            <span class="pan">•••• •••• •••• 0001</span>
+            <span class="meta"><span><span>Cardholder</span>Your Name</span><span><span>Valid thru</span>11/31</span></span>
+          </span>
+          <span class="frost">FROZEN</span>
+        </span>
+        <span class="face back">
+          <span class="inner">
+            <span class="sig"><i></i><span><span style="opacity:.7">CVV · rotates</span><br><span class="cvv" id="cvv">417</span></span></span>
+            <span>Concept artwork. This is not a payment card and carries no account.</span>
+          </span>
+          <span class="frost">FROZEN</span>
+        </span>
+      </button>
+      <div class="stage-ctl">
+        <div class="swatches" role="group" aria-label="Card finish">
+          <button class="swatch" id="fin-petrol" data-finish="petrol" aria-pressed="true" aria-label="Petrol titanium" style="background:#0B4E55"></button>
+          <button class="swatch" id="fin-copper" data-finish="copper" aria-pressed="false" aria-label="Copper" style="background:#9A4E27"></button>
+          <button class="swatch" id="fin-graphite" data-finish="graphite" aria-pressed="false" aria-label="Graphite" style="background:#3A4248"></button>
+        </div>
+        <button class="btn" id="flip">Flip card</button>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="head">
+      <span class="label">What powerful means</span>
+      <h2>Four things a card can be strong at. This one leads on all four.</h2>
+    </div>
+    <div class="pillars">
+      <div class="pillar"><span class="big">∞</span><h3>Spending power</h3><p>No preset limit. Approval adjusts to income, assets and payment history, with a live figure for how much will clear today.</p></div>
+      <div class="pillar"><span class="big">5×</span><h3>Earning</h3><p>5× on travel, 4× dining, 3× groceries, 2× on everything else. Points transfer 1:1 to airlines and hotels.</p></div>
+      <div class="pillar"><span class="big">$0</span><h3>Liability</h3><p>Zero fraud liability, a fresh card number per merchant, and a CVV that changes every hour.</p></div>
+      <div class="pillar"><span class="big">24/7</span><h3>Access</h3><p>Unlimited lounge entry with two guests, primary rental cover, trip delay cover from 3 hours, and a human concierge.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="label">Controls</span>
+      <h2>Try the controls. The card above responds.</h2>
+    </div>
+    <div class="split">
+      <div class="panel">
+        <label class="ctl" for="freeze"><span><b>Freeze card</b><small>Blocks every new charge. Subscriptions you approved keep running.</small></span><input class="switch" type="checkbox" id="freeze"></label>
+        <label class="ctl" for="online"><span><b>Online purchases</b><small>Card-not-present transactions.</small></span><input class="switch" type="checkbox" id="online" checked></label>
+        <label class="ctl" for="intl"><span><b>International</b><small>Charges outside your home country. No foreign transaction fee.</small></span><input class="switch" type="checkbox" id="intl" checked></label>
+        <div class="ctl"><span><b>One-hour CVV</b><small>The code on the back expires. Stolen details stop working.</small></span><button class="btn" id="rotate">Rotate now</button></div>
+      </div>
+      <div class="panel">
+        <span class="label">Test a charge</span>
+        <div class="slider">
+          <label for="amt">Amount</label><span class="num" id="amtOut">$1,200</span>
+          <input type="range" id="amt" min="10" max="50000" step="10" value="1200">
+        </div>
+        <div class="slider">
+          <label for="cap">Per-charge cap</label><span class="num" id="capOut">$5,000</span>
+          <input type="range" id="cap" min="100" max="50000" step="100" value="5000">
+        </div>
+        <div class="stage-ctl" style="justify-content:flex-start">
+          <button class="btn solid" id="tryStore">In store, at home</button>
+          <button class="btn" id="tryWeb">Online</button>
+          <button class="btn" id="tryAbroad">Abroad</button>
+        </div>
+        <div class="log" id="log" role="status">Pick a charge type to see whether it would clear with the settings on the left.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="label">Rewards calculator</span>
+      <h2>Does the fee pay for itself on your spending?</h2>
+      <p class="muted">The sliders start at example figures. Move them to your own monthly spend.</p>
+    </div>
+    <div class="split">
+      <div class="panel" id="sliders"></div>
+      <div class="panel result">
+        <div class="line"><span>Points per year</span><span class="num" id="rPts"></span></div>
+        <div class="line"><span>Value at 1.5¢ per point</span><span class="num" id="rVal"></span></div>
+        <div class="line"><span>Statement credits <span class="muted">($300 travel, $300 dining)</span></span><span class="num">+$600</span></div>
+        <div class="line"><span>Annual fee</span><span class="num">−$695</span></div>
+        <div class="line total" id="rTotalLine"><span>Net value per year</span><span class="num" id="rNet"></span></div>
+        <p class="note" id="rNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="label">Making it real</span>
+      <h2>What it takes to put this card in a wallet</h2>
+      <p>This page is a product design. Nothing here can be spent. A real card needs a licensed bank behind it, and the route there has a fixed order.</p>
+    </div>
+    <ol class="path">
+      <li><h3>Pick the model</h3><p>Co-brand with an existing issuer, or run your own programme through a sponsor bank that holds the licence and the credit risk rules.</p></li>
+      <li><h3>Choose an issuer processor</h3><p>Platforms such as Stripe Issuing, Marqeta or Lithic create the card numbers, authorise each charge and expose the controls shown above as APIs.</p></li>
+      <li><h3>Get network approval</h3><p>The card network assigns a number range, reviews the artwork and certifies the metal card and chip.</p></li>
+      <li><h3>Build compliance and underwriting</h3><p>Identity checks, anti-money-laundering monitoring, credit decisions, disclosures and dispute handling. In the US this means the CARD Act and Regulation Z.</p></li>
+      <li><h3>Fund the credit line</h3><p>Someone lends the money between purchase and payment. That is a bank balance sheet or a debt facility.</p></li>
+      <li><h3>Make the rewards add up</h3><p>Fees, partners and interest have to cover what the points cost. See the gap below.</p></li>
+    </ol>
+    <div class="callout">
+      <h3>The gap this design has to close</h3>
+      <p>5× at 1.5¢ returns 7.5% of travel spend to the cardholder. A US credit card earns its issuer roughly 2% of each purchase from the merchant. The difference is paid for by the annual fee, by airline and hotel partners buying points, and by cardholders who carry a balance. That is why the fee is $695 and why cards this generous are rare.</p>
+    </div>
+  </section>
+
+  <footer>Tessera is an invented name used for this concept. Earn rates, credits, fee and benefits are design targets, not an offer of credit.</footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var card = $('card'), stage = $('stage');
+  var money = function (n) { return (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US'); };
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Guilloché: the interlaced rosette engraving used on banknotes and card stock.
+  function guilloche() {
+    var c = $('guilloche'), g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    g.lineWidth = 0.9;
+    g.strokeStyle = getComputedStyle(card).getPropertyValue('--card-ink').trim() || '#fff';
+    var cx = c.width * 0.72, cy = c.height * 0.46;
+    for (var k = 0; k < 14; k++) {
+      var R = 150 + k * 22, r = 37 + k * 2.5, d = 60 + k * 9;
+      g.globalAlpha = 0.5 - k * 0.025;
+      g.beginPath();
+      for (var t = 0; t <= Math.PI * 2 * 37; t += 0.03) {
+        var x = cx + (R - r) * Math.cos(t) + d * Math.cos((R - r) / r * t);
+        var y = cy + ((R - r) * Math.sin(t) - d * Math.sin((R - r) / r * t)) * 0.62;
+        if (t === 0) g.moveTo(x, y); else g.lineTo(x, y);
+        if (t > Math.PI * 2 * 4 && k > 3) break;
+      }
+      g.stroke();
+    }
+  }
+  guilloche();
+
+  // Tilt and flip
+  var flipped = false;
+  function setFlip(v) { flipped = v; card.style.setProperty('--flip', v ? '180deg' : '0deg'); }
+  card.addEventListener('click', function () { setFlip(!flipped); });
+  $('flip').addEventListener('click', function () { setFlip(!flipped); });
+  if (!reduce) {
+    stage.addEventListener('pointermove', function (e) {
+      var b = card.getBoundingClientRect();
+      var px = (e.clientX - b.left) / b.width - 0.5, py = (e.clientY - b.top) / b.height - 0.5;
+      card.style.setProperty('--ry', (px * 26).toFixed(1) + 'deg');
+      card.style.setProperty('--rx', (-py * 18).toFixed(1) + 'deg');
+      card.style.setProperty('--sheen', (px * 60).toFixed(1) + '%');
+    });
+    stage.addEventListener('pointerleave', function () {
+      card.style.removeProperty('--ry'); card.style.removeProperty('--rx'); card.style.removeProperty('--sheen');
+    });
+  }
+
+  // Finish
+  Array.prototype.forEach.call(document.querySelectorAll('.swatch'), function (s) {
+    s.addEventListener('click', function () {
+      card.dataset.finish = s.dataset.finish;
+      Array.prototype.forEach.call(document.querySelectorAll('.swatch'), function (o) { o.setAttribute('aria-pressed', String(o === s)); });
+      guilloche();
+    });
+  });
+
+  // Controls
+  var freeze = $('freeze'), online = $('online'), intl = $('intl'), amt = $('amt'), cap = $('cap'), log = $('log');
+  freeze.addEventListener('change', function () { card.classList.toggle('frozen', freeze.checked); });
+  $('rotate').addEventListener('click', function () {
+    var n = new Uint16Array(1); crypto.getRandomValues(n);
+    $('cvv').textContent = String(n[0] % 1000).padStart(3, '0');
+    setFlip(true);
+  });
+  function sync() { $('amtOut').textContent = money(+amt.value); $('capOut').textContent = money(+cap.value); }
+  amt.addEventListener('input', sync); cap.addEventListener('input', sync); sync();
+
+  function decide(kind) {
+    var a = +amt.value;
+    if (freeze.checked) return [false, 'the card is frozen'];
+    if (kind === 'web' && !online.checked) return [false, 'online purchases are switched off'];
+    if (kind === 'abroad' && !intl.checked) return [false, 'international charges are switched off'];
+    if (a > +cap.value) return [false, 'it is over your ' + money(+cap.value) + ' per-charge cap'];
+    return [true, ''];
+  }
+  function attempt(kind, name) {
+    var r = decide(kind);
+    log.innerHTML = r[0]
+      ? '<b>Approved.</b> ' + money(+amt.value) + ' ' + name + ' would clear.'
+      : '<b>Declined.</b> ' + money(+amt.value) + ' ' + name + ' is blocked because ' + r[1] + '.';
+  }
+  $('tryStore').addEventListener('click', function () { attempt('store', 'in store'); });
+  $('tryWeb').addEventListener('click', function () { attempt('web', 'online'); });
+  $('tryAbroad').addEventListener('click', function () { attempt('abroad', 'abroad'); });
+
+  // Rewards calculator
+  var POINT = 0.015, FEE = 695, CREDITS = 600;
+  var cats = [
+    { id: 'travel', name: 'Travel', rate: 5, v: 900 },
+    { id: 'dining', name: 'Dining', rate: 4, v: 600 },
+    { id: 'grocery', name: 'Groceries', rate: 3, v: 700 },
+    { id: 'other', name: 'Everything else', rate: 2, v: 2000 }
+  ];
+  var box = $('sliders');
+  cats.forEach(function (c) {
+    var d = document.createElement('div'); d.className = 'slider';
+    d.innerHTML = '<label for="s-' + c.id + '">' + c.name + '<span class="rate">' + c.rate + '×</span></label>' +
+      '<span class="num" id="o-' + c.id + '"></span>' +
+      '<input type="range" id="s-' + c.id + '" min="0" max="10000" step="50" value="' + c.v + '">';
+    box.appendChild(d);
+    $('s-' + c.id).addEventListener('input', calc);
+  });
+  function calc() {
+    var pts = 0;
+    cats.forEach(function (c) {
+      var v = +$('s-' + c.id).value;
+      $('o-' + c.id).textContent = money(v) + ' / mo';
+      pts += v * 12 * c.rate;
+    });
+    var val = pts * POINT, net = val + CREDITS - FEE;
+    $('rPts').textContent = Math.round(pts).toLocaleString('en-US');
+    $('rVal').textContent = '+' + money(val);
+    $('rNet').textContent = money(net);
+    $('rTotalLine').classList.toggle('neg', net < 0);
+    $('rNote').textContent = net >= 0
+      ? 'At this spend the card returns ' + money(net) + ' a year after the fee, if you use both credits and redeem points for travel.'
+      : 'At this spend the fee costs more than the card returns. A no-fee 2% card would serve you better.';
+  }
+  calc();
+})();
+</script>
+<!-- page:end -->
