@@ -2,10 +2,13 @@
 
 // J.P. Morgan issuer adapter: NOT IMPLEMENTED.
 //
-// This file marks where the J.P. Morgan commercial card API connects. It is
+// This file marks where the J.P. Morgan Prepaid Card API connects. It is
 // deliberately empty of guesses: the card endpoints, request fields and
 // authentication for that API come from the documentation J.P. Morgan gives
 // its clients, which this project has not been given yet.
+//
+// What exists: jpmorgan-auth.js fetches mock-environment access tokens.
+// What is missing: the Prepaid Card API specification (endpoints and fields).
 //
 // To finish it, the adapter needs the same two methods as simulator.js:
 //   createCard({ cardholderName, creditLimitCents }) -> { id, last4, expires }
