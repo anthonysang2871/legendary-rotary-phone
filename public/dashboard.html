@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tessera Live Cards</title>
+<link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="mark">TESSERA</span>
+    <span class="tag" id="issuerTag">Issuer: …</span>
+    <span class="tag" id="liveTag">Connecting…</span>
+  </header>
+
+  <main class="grid">
+    <section class="col">
+      <form class="panel" id="issueForm">
+        <h2>Issue a card</h2>
+        <label for="holder">Cardholder name</label>
+        <input id="holder" name="holder" required maxlength="60" value="Test Cardholder" autocomplete="off">
+        <label for="limit">Credit limit (USD)</label>
+        <input id="limit" name="limit" type="number" min="1" max="1000000" step="1" value="10000" required>
+        <button class="btn solid" type="submit">Issue card</button>
+        <p class="error" id="issueError" role="alert" hidden></p>
+      </form>
+
+      <div class="panel">
+        <h2>Cards</h2>
+        <p class="muted" id="noCards">No cards yet. Issue one above to start.</p>
+        <div id="cards" class="cards"></div>
+      </div>
+    </section>
+
+    <section class="col">
+      <form class="panel" id="chargeForm">
+        <h2>Send a test charge</h2>
+        <p class="muted" id="chargeTarget">Select a card first.</p>
+        <div class="row2">
+          <div><label for="amount">Amount (USD)</label><input id="amount" type="number" min="0.01" max="1000000" step="0.01" value="120.00" required></div>
+          <div><label for="merchant">Merchant</label><input id="merchant" maxlength="60" value="Harbor Grill" required autocomplete="off"></div>
+        </div>
+        <div class="row3">
+          <div><label for="category">Category</label><select id="category"><option value="dining">Dining 4×</option><option value="travel">Travel 5×</option><option value="grocery">Groceries 3×</option><option value="other">Other 2×</option></select></div>
+          <div><label for="channel">Channel</label><select id="channel"><option value="in_store">In store</option><option value="online">Online</option></select></div>
+          <div><label for="country">Country</label><select id="country"><option>US</option><option>GB</option><option>JP</option><option>FR</option><option>MX</option></select></div>
+        </div>
+        <button class="btn solid" type="submit" id="chargeBtn" disabled>Authorize</button>
+        <p class="error" id="chargeError" role="alert" hidden></p>
+      </form>
+
+      <div class="panel">
+        <h2>Live authorizations</h2>
+        <p class="muted" id="noTx">Decisions appear here the moment a charge is authorized.</p>
+        <div class="scroll"><table id="feed" hidden>
+          <thead><tr><th>Time</th><th>Card</th><th>Merchant</th><th class="r">Amount</th><th>Decision</th><th class="r">Points</th><th class="r">Speed</th></tr></thead>
+          <tbody id="feedBody"></tbody>
+        </table></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Simulator mode. Cards here are test records with no real account behind them and cannot be spent.</footer>
+</div>
+<script src="/dashboard.js"></script>
+</body>
+</html>

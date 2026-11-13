@@ -1,0 +1,13 @@
+{
+  "name": "tessera-realtime-cards",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Real-time card program demo: instant issuing, live authorization decisions and card controls.",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
