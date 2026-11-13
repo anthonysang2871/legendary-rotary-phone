@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Card Companion</title>
+<style>
+  :root {
+    --bg: #f4f3ef; --surface: #ffffff; --ink: #1c1c1e; --muted: #6b6b70;
+    --line: #e2e0da; --accent: #8a6d3b; --ok: #2f7a4f; --warn: #a3541d;
+    --card-a: #2a2a2d; --card-b: #0d0d0f; --card-ink: #d9d6cf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111113; --surface: #1b1b1e; --ink: #ecebe7; --muted: #9a9aa0;
+      --line: #2c2c31; --accent: #c9a96a; --ok: #5fbf86; --warn: #e08a4f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111113; --surface: #1b1b1e; --ink: #ecebe7; --muted: #9a9aa0;
+    --line: #2c2c31; --accent: #c9a96a; --ok: #5fbf86; --warn: #e08a4f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 0 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .hero { display: grid; gap: 20px; grid-template-columns: minmax(0, 360px) 1fr; align-items: center; margin-bottom: 16px; }
+  @media (max-width: 680px) { .hero { grid-template-columns: 1fr; } }
+  .card { aspect-ratio: 1.586; border-radius: 16px; padding: 22px; color: var(--card-ink);
+    background: linear-gradient(135deg, var(--card-a), var(--card-b) 70%);
+    box-shadow: 0 14px 30px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.06);
+    display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+  .card::after { content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 2px, transparent 2px 4px); pointer-events: none; }
+  .card .tag { font-size: 11px; letter-spacing: .25em; text-transform: uppercase; opacity: .7; }
+  .chip { width: 44px; height: 34px; border-radius: 6px; background: linear-gradient(135deg, #cdb98a, #8f7b4f); }
+  .card .name { font-size: 17px; letter-spacing: .12em; text-transform: uppercase; }
+  .card .name input { all: unset; width: 100%; cursor: text; }
+  .status { display: inline-flex; gap: 8px; align-items: center; color: var(--ok); font-weight: 600; }
+  .status::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--ok); }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; }
+  label { display: block; color: var(--muted); font-size: 13px; margin: 10px 0 4px; }
+  input[type=number], input[type=date] { width: 100%; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+  .result { margin-top: 14px; padding: 12px; border-radius: 8px; background: var(--bg); }
+  .result strong { font-size: 22px; display: block; font-variant-numeric: tabular-nums; }
+  .note { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+  .warn { color: var(--warn); }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>My Card Companion</h1>
+  <p class="sub">Your account terms, application status and payment math, all in one place. Figures come from the Card Member Agreement dated 06/30/2026.</p>
+
+  <div class="hero">
+    <div class="card" aria-label="Personal card tile">
+      <div class="tag">Personal · Companion</div>
+      <div class="chip" aria-hidden="true"></div>
+      <div class="name"><input id="holder" value="Your Name" aria-label="Card holder name" maxlength="26"></div>
+    </div>
+    <section>
+      <h2>Application status</h2>
+      <p class="status">Approved</p>
+      <dl>
+        <dt>Application code</dt><dd>XC18HC271HHG</dd>
+        <dt>Date received</dt><dd>06/02/2026</dd>
+        <dt>Mail date</dt><dd><input type="date" id="mailDate" aria-label="Mail date"></dd>
+      </dl>
+      <p class="note" id="mailNote">Fill in the mail date once the status page shows it.</p>
+    </section>
+  </div>
+
+  <div class="grid">
+    <section>
+      <h2>Rates</h2>
+      <label for="prime">U.S. Prime Rate (WSJ), %</label>
+      <input type="number" id="prime" step="0.01" min="0" value="7.50">
+      <table style="margin-top:12px">
+        <tr><td>Pay Over Time APR <span class="note">(Prime + 12.74%)</span></td><td id="aprPot"></td></tr>
+        <tr><td>Cash Advance APR <span class="note">(Prime + 21.99%)</span></td><td id="aprCash"></td></tr>
+        <tr><td>Penalty APR <span class="note">(Prime + 26.74%)</span></td><td id="aprPen"></td></tr>
+      </table>
+      <p class="note">Variable APRs never go above 29.99%. The penalty APR lasts at least 6 months.</p>
+    </section>
+
+    <section>
+      <h2>Fees and limits</h2>
+      <table>
+        <tr><td>Initiation fee</td><td>$10,000</td></tr>
+        <tr><td>Annual fee</td><td>$5,000</td></tr>
+        <tr><td>Additional card (up to 3 cards)</td><td>$5,000 / yr</td></tr>
+        <tr><td>Additional Platinum card</td><td>$195 / yr</td></tr>
+        <tr><td>Companion card</td><td>$0</td></tr>
+        <tr><td>Foreign transaction</td><td>None</td></tr>
+        <tr><td>Cash advance fee</td><td>$10 or 5%, whichever is more</td></tr>
+        <tr><td>Late / returned payment</td><td>Up to $40</td></tr>
+        <tr><td>Returned check</td><td>$38</td></tr>
+        <tr><td>Cash advance limit</td><td>$10,000</td></tr>
+        <tr><td>Person-to-person limit</td><td>$5,000 / 30 days</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Minimum payment calculator</h2>
+      <label for="pif">Pay In Full new balance, $</label>
+      <input type="number" id="pif" min="0" step="0.01" value="200">
+      <label for="pot">Pay Over Time / Cash Advance new balance, $</label>
+      <input type="number" id="pot" min="0" step="0.01" value="30300">
+      <label for="potInt">Interest included in that balance, $</label>
+      <input type="number" id="potInt" min="0" step="0.01" value="300">
+      <label for="past">Past due amount, $</label>
+      <input type="number" id="past" min="0" step="0.01" value="0">
+      <div class="result">Minimum Payment Due<strong id="minOut"></strong></div>
+      <p class="note">Uses the agreement's formula: the highest of $40, 2% of the balance, or a tiered percentage plus interest. The default inputs match the agreement's example, which comes to $899.</p>
+    </section>
+
+    <section>
+      <h2>Interest estimator</h2>
+      <label for="adb">Average daily balance, $</label>
+      <input type="number" id="adb" min="0" step="0.01" value="2250">
+      <label for="days">Days in billing period</label>
+      <input type="number" id="days" min="1" max="31" value="30">
+      <div class="result">Pay Over Time interest<strong id="intPot"></strong></div>
+      <div class="result">At the cash advance APR<strong id="intCash"></strong></div>
+      <label for="ca">Cash advance amount, $</label>
+      <input type="number" id="ca" min="0" step="0.01" value="500">
+      <div class="result">Cash advance fee<strong id="caFee"></strong></div>
+    </section>
+
+    <section>
+      <h2>Deadlines to remember</h2>
+      <label for="firstPurchase">Date of your first card purchase</label>
+      <input type="date" id="firstPurchase">
+      <p id="arbOut" class="note">Opting out of arbitration: your written notice must be mailed within 45 days of your first purchase.</p>
+      <label for="feeClose">Closing date of the statement that shows the annual fee</label>
+      <input type="date" id="feeClose">
+      <p id="feeOut" class="note">Annual fee refund: close the account within 30 days of that closing date to get the fee back.</p>
+      <p class="note">Your payment is due at least 25 days after each statement closes.</p>
+    </section>
+
+    <section>
+      <h2>Useful contacts</h2>
+      <table>
+        <tr><td>Military Lending Act statement</td><td>855-531-0379</td></tr>
+        <tr><td>Arbitration opt-out</td><td>P.O. Box 981556, El Paso, TX 79998</td></tr>
+        <tr><td>Credit bureau disputes</td><td>P.O. Box 981537, El Paso, TX 79998-1537</td></tr>
+        <tr><td>Everything else</td><td>Number on the back of your card</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <footer>This is a personal planning tool and isn't affiliated with or endorsed by the card issuer. Results are estimates; your billing statement is the authority.</footer>
+</main>
+
+<script src="calc.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var money = function (n) { return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var num = function (id) { var v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
+  var fmtDate = function (d) { return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }); };
+  var addDays = function (iso, n) { var d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d; };
+  var fields = ["holder", "mailDate", "prime", "pif", "pot", "potInt", "past", "adb", "days", "ca", "firstPurchase", "feeClose"];
+  var KEY = "card-companion-v1";
+
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || "{}");
+    fields.forEach(function (f) { if (saved[f] != null) $(f).value = saved[f]; });
+  } catch (e) {}
+
+  function render() {
+    var r = CardCalc.aprs(num("prime"));
+    $("aprPot").textContent = r.payOverTime.toFixed(2) + "%";
+    $("aprCash").textContent = r.cashAdvance.toFixed(2) + "%";
+    $("aprPen").textContent = r.penalty.toFixed(2) + "%";
+
+    $("minOut").textContent = money(CardCalc.minimumDue(num("pot"), num("potInt"), num("pif"), num("past")));
+    $("intPot").textContent = money(CardCalc.interest(num("adb"), r.payOverTime, num("days")));
+    $("intCash").textContent = money(CardCalc.interest(num("adb"), r.cashAdvance, num("days")));
+    $("caFee").textContent = money(CardCalc.cashAdvanceFee(num("ca")));
+
+    var today = new Date();
+    function deadline(id, outId, days, label) {
+      var v = $(id).value;
+      if (!v) return;
+      var d = addDays(v, days);
+      var left = Math.ceil((d - today) / 86400000);
+      $(outId).innerHTML = label + " by <strong>" + fmtDate(d) + "</strong> " +
+        (left >= 0 ? "(" + left + " days left)" : '<span class="warn">(this deadline has passed)</span>');
+    }
+    deadline("firstPurchase", "arbOut", 45, "Mail an arbitration opt-out notice");
+    deadline("feeClose", "feeOut", 30, "Close the account for an annual fee refund");
+
+    if ($("mailDate").value) $("mailNote").textContent = "Card mailed " + fmtDate(new Date($("mailDate").value + "T00:00:00Z")) + ".";
+
+    try {
+      var state = {};
+      fields.forEach(function (f) { state[f] = $(f).value; });
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  fields.forEach(function (f) { $(f).addEventListener("input", render); });
+  render();
+})();
+</script>
+</body>
+</html>
